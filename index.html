@@ -1,0 +1,263 @@
+<!doctype html>
+<head>
+<style>
+
+
+#card {
+   font-family: Helvetica, arial;
+  font-size: 14px;
+
+  /*border: 1px solid black;*/
+  -webkit-box-shadow: -0px -0px 10px #333;
+  margin: 20px;
+ 
+   
+   padding: 10px;
+   font-size: 20px;
+  width: 480px;
+  height: 228px;
+  display: table-cell;
+  vertical-align: middle;
+  
+
+}
+
+
+#wrapper {
+  display: table-row;
+  vertical-align: middle;
+  width: 700px;
+
+}
+
+.card-arrow {
+  font-family: Courier new;
+  font-weight: bold;
+  color: white;
+   -webkit-box-shadow: -0px -0px 10px #000;
+  background-color: gray;
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  font-size: 50px;
+  display: inline-block
+}
+.arrow-wrapper{
+  display: table-cell;
+  vertical-align: middle;
+  padding: 20px;
+}
+
+.arrow-wrapper:hover .card-arrow{
+ background-color: #000;
+  
+}
+
+@-webkit-keyframes 'leave' {
+  from {
+    -webkit-transform: translateX(0);
+    -webkit-transform: translateY(0);
+  }
+  to {
+       -webkit-transform: translateX(200px);
+    -webkit-transform: translateY(200px);
+      
+  }
+}
+.leave {
+  -webkit-animation: leave 2s linear 1;
+}
+
+
+
+
+@-webkit-keyframes 'spin' {
+  from {
+    -webkit-transform: rotateY(0deg);
+  }
+  to {
+     -webkit-transform: rotateY(180deg);
+      
+  }
+}
+
+
+.rotate180 {
+ /* -webkit-transition: -webkit-transform .5s ease-in;
+  -webkit-transform: rotateX(360deg);*/
+ 
+  -webkit-animation: spin .1s linear 1;
+}
+
+
+
+
+
+</style>
+<script src="jquery.js"></script>
+<script>
+var rows = []
+var row_index = 0;
+var side = "front";
+function load_flashcards(json) {
+  
+  col_prefix = "gsx$";
+  try{
+    feed = json.feed
+    entries = feed.entry
+    
+    for (var i in entries) {
+      entry = entries[i]
+      var row = {}
+      for (var j in entry) {
+        value = entry[j]
+        value = value['$t']
+        if (j.substr(0,col_prefix.length) == col_prefix) {
+          row[j.substr(col_prefix.length)] = value
+        }
+      }
+      rows.push(row)
+    }
+  } catch (e) {
+    
+    alert('oops')
+  }
+  
+  card()
+}
+
+function card(spin){
+  //alert("hi")
+  
+  if (spin !== 0) {
+    $("#card").addClass('rotate180')
+  }
+  if (side == "front") {
+    side = "back"
+    
+  } else {
+    side = "front"
+   
+  }
+  
+  setTimeout(function(){$("#card-inner").text(rows[row_index][side])}, 100)
+  setTimeout(function(){$("#card").removeClass('rotate180')   
+  }, 100)
+}
+
+
+
+
+$(document).ready(function () {
+  
+     $("#card").bind("transitionend", function(e){
+    console.log(e)
+   })
+ 
+  document.body.ontransitionend = function(e) {
+    alert('test')
+  }
+   //$(document.body).bind("transitionend", function(e){
+   // console.log(e)
+   //})
+  
+  $(document.body).keydown(function(e){
+   
+    if (e.target != $("#url")[0]) {
+      e.preventDefault()
+      //return false
+      if (e.keyCode == 32) {
+        card()
+      }
+      if (e.keyCode == 37) {
+        
+        card();
+      }
+    
+      if (e.keyCode == 38) {
+      prev()
+       
+      }
+       if (e.keyCode == 40) {
+       next()
+      }
+      if (e.keyCode == 39) {
+       card();
+      }
+    }
+  })
+  
+  function prev() {
+    if (row_index <= 0) {
+          row_index = rows.length - 1
+        } else {
+          row_index--
+        }
+        
+        
+        side = "back"
+        card(0)
+  }
+  function next() {
+     if (row_index >= rows.length - 1) {
+          row_index = 0
+        } else {
+          row_index++
+          
+        }
+        side = "back"
+        card(0)
+  }
+  
+  var key = localStorage.getItem("key");
+  if (key) {
+    load_spreadsheet_by_key(key)
+  }
+  
+  $('#load_spreadsheet').submit(function(e){
+    e.preventDefault();
+    var url = $("#url").val();
+     var key_full = url.match("key=[^&]*")
+    key = key_full[0].split("=")[1]
+    load_spreadsheet_by_key(key)
+    localStorage.setItem("key", key)
+    return false;
+  })
+  
+  function load_spreadsheet_by_key(key) {
+    
+    var worksheet = 'od6' //?
+    var scripty = document.createElement("script")
+    scripty.src = 'http://spreadsheets.google.com/feeds/list/' + key + '/' + worksheet + '/public/values' + '?alt=json-in-script&callback=load_flashcards';
+    document.body.appendChild(scripty)
+  }
+  
+  $('#card').click(card)
+  $("#law").click(prev)
+  $('#raw').click(next)
+  
+})
+</script>
+</head>
+<body>
+<form id="load_spreadsheet">
+<input type="text" id="url"/>
+<input type="submit" value="Load Flashcards">
+</form>
+<br/><br/>
+
+
+
+<div align ="center">
+<div align="center" id="wrapper">
+<div id="law" class="arrow-wrapper"><div id="l-arrow" class="card-arrow"></div></div>
+<div id="card">
+  <div id="card-inner">
+  </div> 
+</div>
+<div id = "raw" class="arrow-wrapper"><div id="r-arrow" class="card-arrow"></div></div>
+</div>
+
+</body>
+</html>
+
