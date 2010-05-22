@@ -1,9 +1,15 @@
 <!doctype html>
 <head>
+<meta name = "viewport" 
+content = "user-scalable = no, maximum-scale=1.0, initial-scale = 1.0, width = device-width, height = device-height">
 <style>
 
+#star {
+ 
+}
 
 #card {
+    position: relative;
    font-family: Helvetica, arial;
   font-size: 14px;
 
@@ -36,8 +42,8 @@
   color: white;
    -webkit-box-shadow: -0px -0px 10px #000;
   background-color: gray;
-  width: 50px;
-  height: 50px;
+  width: 10px;
+  height: 10px;
   border-radius: 25px;
   font-size: 50px;
   display: inline-block
@@ -95,10 +101,13 @@
 
 </style>
 <script src="jquery.js"></script>
+<script src="json.js"></script>
+<script src="swipe.js"></script>
+
 <script>
 var rows = []
-var row_index = 0;
-var side = "front";
+var row_index = localStorage['row_index'] || 0;
+var side = "back";
 function load_flashcards(json) {
   
   col_prefix = "gsx$";
@@ -140,6 +149,7 @@ function card(spin){
    
   }
   
+  $('#row_index').val(row_index)
   setTimeout(function(){$("#card-inner").text(rows[row_index][side])}, 100)
   setTimeout(function(){$("#card").removeClass('rotate180')   
   }, 100)
@@ -149,13 +159,42 @@ function card(spin){
 
 
 $(document).ready(function () {
-  
+    show_favs();
+    
+    /*
+    $('#card').swipe({
+        swipeLeft: function(){$('#l-arrow').click()},
+        swipeRight: function(){$('#r-arrow').click()},
+    })*/
+
+    
+    $('#star').click(function(e){
+       e.preventDefault()
+       var favs = localStorage['favs'] || "{}"
+       favs = JSON.parse(favs)
+       
+       if (row_index in favs) {
+       
+       } else {
+            favs[row_index] = ":)";
+       }
+       
+       
+       localStorage['favs'] = JSON.stringify(favs);
+       show_favs();
+       return false;
+   
+    })
+
+    $('#row_index').val(localStorage['row_index'] || 0);
+    
+    
      $("#card").bind("transitionend", function(e){
     console.log(e)
    })
  
   document.body.ontransitionend = function(e) {
-    alert('test')
+    //alert('test')
   }
    //$(document.body).bind("transitionend", function(e){
    // console.log(e)
@@ -163,7 +202,7 @@ $(document).ready(function () {
   
   $(document.body).keydown(function(e){
    
-    if (e.target != $("#url")[0]) {
+    if (e.target != $("#url")[0] && e.target != $("#row_index")[0]) {
       e.preventDefault()
       //return false
       if (e.keyCode == 32) {
@@ -194,8 +233,8 @@ $(document).ready(function () {
           row_index--
         }
         
-        
         side = "back"
+        localStorage["row_index"] = row_index;
         card(0)
   }
   function next() {
@@ -206,8 +245,11 @@ $(document).ready(function () {
           
         }
         side = "back"
+        localStorage["row_index"] = row_index;
         card(0)
   }
+  
+
   
   var key = localStorage.getItem("key");
   if (key) {
@@ -224,6 +266,17 @@ $(document).ready(function () {
     return false;
   })
   
+  $('#load_card').submit(function(e){
+      e.preventDefault()
+      
+      row_index = $('#row_index').val();
+      localStorage['row_index'] = row_index;
+      side = "back"
+      card()
+      
+      return false;
+  })
+  
   function load_spreadsheet_by_key(key) {
     
     var worksheet = 'od6' //?
@@ -237,6 +290,30 @@ $(document).ready(function () {
   $('#raw').click(next)
   
 })
+
+
+function delete_fav(fav) {
+   var favs = localStorage['favs']
+  favs = JSON.parse(favs);
+  delete favs[fav];
+  favs = JSON.stringify(favs);
+  localStorage['favs'] = favs
+  show_favs();
+}
+
+function show_favs() {
+  var favs = localStorage['favs'] || "{}"
+  favs = JSON.parse(favs)
+  console.log(favs)
+  $('#favs').empty()
+  for (var fav in favs) {
+     
+     $('#favs').append("<a href = 'javascript:row_index = "+fav+"; side=" + '"' + 'back' + '"' + "; card()'>"+fav+"</a>")
+     $('#favs').append(" &nbsp;<a href = 'javascript:delete_fav("+fav+")'>x</a>");
+     $('#favs').append('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+      
+  }
+}
 </script>
 </head>
 <body>
@@ -244,6 +321,12 @@ $(document).ready(function () {
 <input type="text" id="url"/>
 <input type="submit" value="Load Flashcards">
 </form>
+
+<form id="load_card">
+<input type="text" id="row_index"/>
+<input type="submit" value="Load card">
+</form>
+
 <br/><br/>
 
 
@@ -252,12 +335,19 @@ $(document).ready(function () {
 <div align="center" id="wrapper">
 <div id="law" class="arrow-wrapper"><div id="l-arrow" class="card-arrow"></div></div>
 <div id="card">
+  
   <div id="card-inner">
+  
   </div> 
 </div>
+
 <div id = "raw" class="arrow-wrapper"><div id="r-arrow" class="card-arrow"></div></div>
 </div>
 
+<div style="float:left; padding-right: 20px;"><a href="#"id="star">*</a></div>
+<div id="favs" style="float:left;">
+
+</div>
 </body>
 </html>
 
